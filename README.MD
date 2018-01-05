@@ -5,5 +5,6 @@
 [给初学者的RxJava2.0教程(一)](https://www.jianshu.com/p/464fa025229e)
 
 
+
 有关操作符demo如下：
 [使用RxJava的操作符](https://github.com/ALguojian/RxjavaDemo/blob/master/app/src/main/java/com/alguojian/rxjavademo/RxJavaUtils.java)
