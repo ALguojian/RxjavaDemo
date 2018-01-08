@@ -1,4 +1,4 @@
-package com.alguojian.rxjavademo;
+package com.alguojian.rxjavademo.rxjava;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -7,7 +7,6 @@ import java.util.concurrent.TimeUnit;
 
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Flowable;
-import io.reactivex.FlowableEmitter;
 import io.reactivex.FlowableOnSubscribe;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
@@ -15,7 +14,6 @@ import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
-import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
 
 /**
@@ -131,16 +129,10 @@ public class RxjavaRead {
      */
     public void useConsumer() {
 
-        Observable.create(new ObservableOnSubscribe<Integer>() {
-            @Override
-            public void subscribe(ObservableEmitter<Integer> emitter) throws Exception {
+        Observable.create((ObservableOnSubscribe<Integer>) emitter -> {
 
-            }
-        }).subscribe(new Consumer<Integer>() {
-            @Override
-            public void accept(Integer integer) throws Exception {
+        }).subscribe(integer -> {
 
-            }
         });
 
     }
@@ -162,20 +154,14 @@ public class RxjavaRead {
     //例子如下
     public void aa() {
 
-        Observable.create(new ObservableOnSubscribe<Integer>() {
-            @Override
-            public void subscribe(ObservableEmitter<Integer> emitter) throws Exception {
+        Observable.create((ObservableOnSubscribe<Integer>) emitter -> {
 
-            }
         }).subscribeOn(Schedulers.newThread())
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .observeOn(Schedulers.io())
-                .subscribe(new Consumer<Integer>() {
-                    @Override
-                    public void accept(Integer integer) throws Exception {
+                .subscribe(integer -> {
 
-                    }
                 });
 
     }
@@ -213,15 +199,12 @@ public class RxjavaRead {
 
     public void useFlowable() {
 
-        Flowable<Integer> integerFlowable = Flowable.create(new FlowableOnSubscribe<Integer>() {
-            @Override
-            public void subscribe(FlowableEmitter<Integer> emitter) throws Exception {
-                emitter.onNext(1);
-                emitter.onNext(2);
-                emitter.onNext(3);
-                emitter.onNext(4);
-                emitter.onComplete();
-            }
+        Flowable<Integer> integerFlowable = Flowable.create(emitter -> {
+            emitter.onNext(1);
+            emitter.onNext(2);
+            emitter.onNext(3);
+            emitter.onNext(4);
+            emitter.onComplete();
         }, BackpressureStrategy.ERROR);
 
         Subscriber<Integer> stream = new Subscriber<Integer>() {
@@ -323,11 +306,8 @@ public class RxjavaRead {
     public void setRequestId() {
 
         Flowable
-                .create(new FlowableOnSubscribe<Integer>() {
-                    @Override
-                    public void subscribe(FlowableEmitter<Integer> emitter) throws Exception {
+                .create((FlowableOnSubscribe<Integer>) emitter -> {
 
-                    }
                 }, BackpressureStrategy.ERROR)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())

@@ -1,11 +1,10 @@
-package com.alguojian.rxjavademo;
+package com.alguojian.rxjavademo.rxjava;
 
+import com.alguojian.rxjavademo.TimeUtils;
 import com.socks.library.KLog;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Flowable;
@@ -17,12 +16,9 @@ import io.reactivex.Observer;
 import io.reactivex.Single;
 import io.reactivex.SingleObserver;
 import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.annotations.NonNull;
 import io.reactivex.disposables.Disposable;
-import io.reactivex.functions.BiFunction;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
-import io.reactivex.functions.Predicate;
 import io.reactivex.schedulers.Schedulers;
 
 import static com.alguojian.rxjavademo.base.MyApplication.TTAG;
@@ -44,17 +40,14 @@ public class RxJavaUtils {
      */
     public static void useMap() {
 
-        Observable.create(new ObservableOnSubscribe<Integer>() {
-            @Override
-            public void subscribe(ObservableEmitter<Integer> emitter) throws Exception {
+        Observable.create((ObservableOnSubscribe<Integer>) emitter -> {
 
-                emitter.onNext(1);
-                emitter.onNext(2);
-                emitter.onNext(3);
-                emitter.onNext(4);
-                emitter.onNext(5);
+            emitter.onNext(1);
+            emitter.onNext(2);
+            emitter.onNext(3);
+            emitter.onNext(4);
+            emitter.onNext(5);
 
-            }
         }).map(new Function<Integer, String>() {
 
             /**
@@ -92,19 +85,16 @@ public class RxJavaUtils {
 
         final StringBuilder stringBuilder = new StringBuilder();
 
-        Observable.create(new ObservableOnSubscribe<Integer>() {
-            @Override
-            public void subscribe(ObservableEmitter<Integer> emitter) throws Exception {
+        Observable.create((ObservableOnSubscribe<Integer>) emitter -> {
 
-                stringBuilder.append("哈哈");
-                emitter.onNext(1);
-                stringBuilder.append("，我是");
-                emitter.onNext(2);
-                //下面事件可以发送，但是不再接收
-                emitter.onComplete();
-                stringBuilder.append("小学生");
-                emitter.onNext(3);
-            }
+            stringBuilder.append("哈哈");
+            emitter.onNext(1);
+            stringBuilder.append("，我是");
+            emitter.onNext(2);
+            //下面事件可以发送，但是不再接收
+            emitter.onComplete();
+            stringBuilder.append("小学生");
+            emitter.onNext(3);
         }).subscribe(new Observer<Integer>() {
 
             /**
@@ -160,57 +150,42 @@ public class RxJavaUtils {
      */
     public static void useZip() {
 
-        Observable.zip(getStringObservable(), getIntegerObservable(), new BiFunction<String, Integer, String>() {
-            @Override
-            public String apply(String s, Integer integer) throws Exception {
-                return s + integer;
-            }
-        }).subscribe(new Consumer<String>() {
-            @Override
-            public void accept(String s) throws Exception {
-                KLog.d(TTAG, "新的消息字段是" + s);
-            }
-        });
+        Observable.zip(getStringObservable(), getIntegerObservable(),
+                (s, integer) -> s + integer).subscribe(s -> KLog.d(TTAG, "新的消息字段是" + s));
     }
 
     private static Observable<String> getStringObservable() {
-        return Observable.create(new ObservableOnSubscribe<String>() {
-            @Override
-            public void subscribe(@NonNull ObservableEmitter<String> e) throws Exception {
-                if (!e.isDisposed()) {
-                    aaa.append("asd");
-                    e.onNext("A");
-                    aaa.append("asd");
-                    e.onNext("B");
-                    aaa.append("asd");
-                    aaa.append("zxczxc");
-                    e.onNext("C");
-                }
+        return Observable.create((ObservableOnSubscribe<String>) e -> {
+            if (!e.isDisposed()) {
+                aaa.append("asd");
+                e.onNext("A");
+                aaa.append("asd");
+                e.onNext("B");
+                aaa.append("asd");
+                aaa.append("zxczxc");
+                e.onNext("C");
             }
         }).subscribeOn(Schedulers.io());
     }
 
     private static Observable<Integer> getIntegerObservable() {
-        return Observable.create(new ObservableOnSubscribe<Integer>() {
-            @Override
-            public void subscribe(@NonNull ObservableEmitter<Integer> e) throws Exception {
-                if (!e.isDisposed()) {
+        return Observable.create((ObservableOnSubscribe<Integer>) e -> {
+            if (!e.isDisposed()) {
 
-                    e.onNext(1);
-                    aaa.append("--" + 1);
+                e.onNext(1);
+                aaa.append("--" + 1);
 
-                    e.onNext(2);
-                    aaa.append("--" + 2);
+                e.onNext(2);
+                aaa.append("--" + 2);
 
-                    e.onNext(3);
-                    aaa.append("--" + 3);
+                e.onNext(3);
+                aaa.append("--" + 3);
 
-                    e.onNext(4);
-                    aaa.append("--" + 4);
+                e.onNext(4);
+                aaa.append("--" + 4);
 
-                    e.onNext(5);
-                    aaa.append("--" + 5);
-                }
+                e.onNext(5);
+                aaa.append("--" + 5);
             }
         }).subscribeOn(Schedulers.io());
     }
@@ -223,13 +198,7 @@ public class RxJavaUtils {
     public static void useConcat() {
 
         Observable.concat(Observable.just(1, 2, 3, 4), Observable.just(6, 7, 8))
-                .subscribe(new Consumer<Integer>() {
-                    @Override
-                    public void accept(Integer integer) throws Exception {
-
-                        KLog.d(TTAG, "这是第几个？" + integer);
-                    }
-                });
+                .subscribe(integer -> KLog.d(TTAG, "这是第几个？" + integer));
 
     }
 
@@ -242,35 +211,23 @@ public class RxJavaUtils {
      */
     public static void useFlatMap() {
 
-        Observable.create(new ObservableOnSubscribe<Integer>() {
-            @Override
-            public void subscribe(ObservableEmitter<Integer> emitter) throws Exception {
-                emitter.onNext(1);
-                emitter.onNext(2);
-                emitter.onNext(3);
-            }
-        }).flatMap(new Function<Integer, ObservableSource<String>>() {
-            @Override
-            public ObservableSource<String> apply(Integer integer) throws Exception {
+        Observable.create((ObservableOnSubscribe<Integer>) emitter -> {
+            emitter.onNext(1);
+            emitter.onNext(2);
+            emitter.onNext(3);
+        }).flatMap(integer -> {
 
-                ArrayList<String> strings = new ArrayList<>();
+            ArrayList<String> strings = new ArrayList<>();
 
-                for (int i = 0; i < 3; i++) {
-                    strings.add("这是第几个" + i);
-                }
-                int time = (int) (1 + Math.random() * 10);
-                //添加延迟效果
-                return Observable.fromIterable(strings).delay(time, TimeUnit.MILLISECONDS);
+            for (int i = 0; i < 3; i++) {
+                strings.add("这是第几个" + i);
             }
+            int time = (int) (1 + Math.random() * 10);
+            //添加延迟效果
+            return Observable.fromIterable(strings).delay(time, TimeUnit.MILLISECONDS);
         }).subscribeOn(Schedulers.newThread())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Consumer<String>() {
-                    @Override
-                    public void accept(String s) throws Exception {
-
-                        KLog.d(TTAG, s);
-                    }
-                });
+                .subscribe(s -> KLog.d(TTAG, s));
     }
 
 
@@ -331,32 +288,22 @@ public class RxJavaUtils {
 
     /**
      * 添加过滤器,sample是添加给个两秒去一个事件放到水缸中，也是过滤的一种方式
-     *
+     * <p>
      * 两种方法归根到底其实就是减少放进水缸的事件的数量, 是以数量取胜, 但是这个方法有个缺点, 就是丢失了大部分的事件.
-     *
+     * <p>
      * 关于OOM
      * 一是从数量上进行治理, 减少发送进水缸里的事件
-     *二是从速度上进行治理, 减缓事件发送进水缸的速度
-     *
-     *  1.使用 sample 操作符的确定文中已经提到，会丢失部分事件；
-     *  2.使用 sleep 延时的操作也并不完美，下游处理过慢（超过 sleep 时间）时依然后丢失事件。
+     * 二是从速度上进行治理, 减缓事件发送进水缸的速度
+     * <p>
+     * 1.使用 sample 操作符的确定文中已经提到，会丢失部分事件；
+     * 2.使用 sleep 延时的操作也并不完美，下游处理过慢（超过 sleep 时间）时依然后丢失事件。
      */
     public static void useFilter() {
 
         Observable.just(1, 20, -20, 57, 43, 80)
-                .filter(new Predicate<Integer>() {
-                    @Override
-                    public boolean test(Integer integer) throws Exception {
-                        return integer % 2 == 1;
-                    }
-                })
-                .sample(2,TimeUnit.SECONDS)
-                .subscribe(new Consumer<Integer>() {
-            @Override
-            public void accept(Integer integer) throws Exception {
-                KLog.d(TTAG, "接收消息是" + integer);
-            }
-        });
+                .filter(integer -> integer % 2 == 1)
+                .sample(2, TimeUnit.SECONDS)
+                .subscribe(integer -> KLog.d(TTAG, "接收消息是" + integer));
     }
 
 
@@ -370,13 +317,7 @@ public class RxJavaUtils {
 
         Observable.just(1, 2, 3, 4, 5, 0)
                 .buffer(4, 2)
-                .subscribe(new Consumer<List<Integer>>() {
-                    @Override
-                    public void accept(List<Integer> integers) throws Exception {
-
-                        KLog.d(TTAG, integers);
-                    }
-                });
+                .subscribe(integers -> KLog.d(TTAG, integers));
 
     }
 
@@ -394,12 +335,7 @@ public class RxJavaUtils {
                 .subscribeOn(Schedulers.io())
                 // timer 默认在新线程，所以需要切换回主线程
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Consumer<Long>() {
-                    @Override
-                    public void accept(Long aLong) throws Exception {
-                        KLog.d(TTAG, TimeUtils.getNowTime() + "");
-                    }
-                });
+                .subscribe(aLong -> KLog.d(TTAG, TimeUtils.getNowTime() + ""));
     }
 
 
@@ -414,12 +350,7 @@ public class RxJavaUtils {
         Disposable subscribe = Observable.interval(3, 2, TimeUnit.SECONDS)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Consumer<Long>() {
-                    @Override
-                    public void accept(Long aLong) throws Exception {
-                        KLog.d(TTAG, aLong + "---" + TimeUtils.getNowTime());
-                    }
-                });
+                .subscribe(aLong -> KLog.d(TTAG, aLong + "---" + TimeUtils.getNowTime()));
     }
     //subscribe.dispose();
     //记得activity销毁时取消发送
@@ -431,18 +362,10 @@ public class RxJavaUtils {
     public static void useDoOnNext() {
 
         Observable.just(1, 2, 3, 4)
-                .doOnNext(new Consumer<Integer>() {
-                    @Override
-                    public void accept(@NonNull Integer integer) throws Exception {
-                        aaa.append("doOnNext 保存 " + integer);
-                        KLog.d(TTAG, aaa.toString());
-                    }
-                }).subscribe(new Consumer<Integer>() {
-            @Override
-            public void accept(@NonNull Integer integer) throws Exception {
-                KLog.d(TTAG, "accept--" + aaa.toString());
-            }
-        });
+                .doOnNext(integer -> {
+                    aaa.append("doOnNext 保存 " + integer);
+                    KLog.d(TTAG, aaa.toString());
+                }).subscribe(integer -> KLog.d(TTAG, "accept--" + aaa.toString()));
     }
 
 
@@ -453,12 +376,7 @@ public class RxJavaUtils {
 
         Observable.just(1, 2, 3, 4, 5, 6, 7)
                 .skip(3)
-                .subscribe(new Consumer<Integer>() {
-                    @Override
-                    public void accept(Integer integer) throws Exception {
-                        KLog.d(TTAG, integer);
-                    }
-                });
+                .subscribe(integer -> KLog.d(TTAG, integer));
     }
 
 
@@ -469,13 +387,7 @@ public class RxJavaUtils {
 
         Flowable.fromArray(1, 2, 3, 4, 5, 6, 7, 7)
                 .take(4)
-                .subscribe(new Consumer<Integer>() {
-                    @Override
-                    public void accept(Integer integer) throws Exception {
-
-                        KLog.d(TTAG, integer);
-                    }
-                });
+                .subscribe(integer -> KLog.d(TTAG, integer));
     }
 
 
@@ -486,12 +398,7 @@ public class RxJavaUtils {
 
         Observable.just("1", "2", "3", "5")
                 .subscribeOn(Schedulers.io())
-                .subscribe(new Consumer<String>() {
-                    @Override
-                    public void accept(String s) throws Exception {
-                        KLog.d(TTAG, s);
-                    }
-                });
+                .subscribe(s -> KLog.d(TTAG, s));
     }
 
     /**
@@ -527,40 +434,26 @@ public class RxJavaUtils {
      */
     public static void useDebonunce() {
 
-        Observable.create(new ObservableOnSubscribe<Integer>() {
-            @Override
-            public void subscribe(ObservableEmitter<Integer> emitter) throws Exception {
+        Observable.create((ObservableOnSubscribe<Integer>)
+                emitter -> {
 
-                emitter.onNext(1);
-                Thread.sleep(300);
-                emitter.onNext(2);
-                Thread.sleep(500);
-                emitter.onComplete();
-            }
-        }).debounce(500, TimeUnit.MILLISECONDS)
+                    emitter.onNext(1);
+                    Thread.sleep(300);
+                    emitter.onNext(2);
+                    Thread.sleep(500);
+                    emitter.onComplete();
+                }).debounce(500, TimeUnit.MILLISECONDS)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Consumer<Integer>() {
-                    @Override
-                    public void accept(Integer integer) throws Exception {
-
-                        KLog.d(TTAG, integer);
-                    }
-                });
+                .subscribe(integer -> KLog.d(TTAG, integer));
     }
-
 
     /**
      * 每次订阅都会创建一个新的 Observable，并且如果没有被订阅，就不会产生新的 Observable。
      */
     public static void useDefer() {
 
-        Observable<Integer> observable = Observable.defer(new Callable<ObservableSource<? extends Integer>>() {
-            @Override
-            public ObservableSource<? extends Integer> call() throws Exception {
-                return Observable.just(1, 2, 3, 4);
-            }
-        });
+        Observable<Integer> observable = Observable.defer(() -> Observable.just(1, 2, 3, 4));
 
         observable.subscribe(new Observer<Integer>() {
             @Override
@@ -595,12 +488,7 @@ public class RxJavaUtils {
 
         Observable.just(1, 2, 3, 4, 5, 6, 7, 8)
                 .last(4)
-                .subscribe(new Consumer<Integer>() {
-                    @Override
-                    public void accept(Integer integer) throws Exception {
-                        KLog.d(TTAG, integer + "");
-                    }
-                });
+                .subscribe(integer -> KLog.d(TTAG, integer + ""));
     }
 
 
@@ -611,13 +499,7 @@ public class RxJavaUtils {
     public static void useMerge() {
 
         Observable.merge(Observable.just(1, 2, 3), Observable.just(5, 6, 7, 8))
-                .subscribe(new Consumer<Integer>() {
-                    @Override
-                    public void accept(Integer integer) throws Exception {
-
-                        KLog.d(TTAG, "第几个" + integer);
-                    }
-                });
+                .subscribe(integer -> KLog.d(TTAG, "第几个" + integer));
     }
 
     ;
@@ -629,20 +511,11 @@ public class RxJavaUtils {
     public static void useReduce() {
 
         Observable.just(1, 2, 3, 4)
-                .reduce(new BiFunction<Integer, Integer, Integer>() {
-                    @Override
-                    public Integer apply(Integer integer, Integer integer2) throws Exception {
-                        KLog.d(TTAG, integer + "");
-                        KLog.d(TTAG, integer2 + "");
-                        return integer + integer2;
-                    }
-                }).subscribe(new Consumer<Integer>() {
-            @Override
-            public void accept(Integer integer) throws Exception {
-
-                KLog.d(TTAG, integer + "");
-            }
-        });
+                .reduce((integer, integer2) -> {
+                    KLog.d(TTAG, integer + "");
+                    KLog.d(TTAG, integer2 + "");
+                    return integer + integer2;
+                }).subscribe(integer -> KLog.d(TTAG, integer + ""));
     }
 
 
@@ -652,19 +525,11 @@ public class RxJavaUtils {
     public static void useScan() {
 
         Observable.just(1, 2, 3, 4)
-                .scan(new BiFunction<Integer, Integer, Integer>() {
-                    @Override
-                    public Integer apply(Integer integer, Integer integer2) throws Exception {
-                        KLog.d(TTAG, integer + "");
-                        KLog.d(TTAG, integer2 + "");
-                        return integer + integer2;
-                    }
-                }).subscribe(new Consumer<Integer>() {
-            @Override
-            public void accept(Integer integer) throws Exception {
-                KLog.d(TTAG, integer + "");
-            }
-        });
+                .scan((integer, integer2) -> {
+                    KLog.d(TTAG, integer + "");
+                    KLog.d(TTAG, integer2 + "");
+                    return integer + integer2;
+                }).subscribe(integer -> KLog.d(TTAG, integer + ""));
     }
 
 
@@ -677,21 +542,15 @@ public class RxJavaUtils {
                 .take(15)//最多接收15个
                 .window(3, TimeUnit.SECONDS)
                 .subscribeOn(Schedulers.io())
-                .subscribe(new Consumer<Observable<Long>>() {
-                    @Override
-                    public void accept(Observable<Long> longObservable) throws Exception {
-                        aaa.append("aa");
-                        KLog.d(TTAG, aaa.toString());
-                        longObservable.subscribeOn(Schedulers.io())
-                                .observeOn(AndroidSchedulers.mainThread())
-                                .subscribe(new Consumer<Long>() {
-                                    @Override
-                                    public void accept(Long aLong) throws Exception {
-                                        aaa.append("bb");
-                                        KLog.d(TTAG, aaa.toString());
-                                    }
-                                });
-                    }
+                .subscribe(longObservable -> {
+                    aaa.append("aa");
+                    KLog.d(TTAG, aaa.toString());
+                    longObservable.subscribeOn(Schedulers.io())
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .subscribe(aLong -> {
+                                aaa.append("bb");
+                                KLog.d(TTAG, aaa.toString());
+                            });
                 });
     }
 

@@ -1,10 +1,12 @@
-package com.alguojian.rxjavademo;
+package com.alguojian.rxjavademo.ui;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.Toast;
 
-import com.alguojian.rxjavademo.allinterface.RetrefitApi;
+import com.alguojian.rxjavademo.OkHttpUtils;
+import com.alguojian.rxjavademo.R;
+import com.alguojian.rxjavademo.allinterface.RetrofitApi;
 import com.alguojian.rxjavademo.entity.BookCommentRequest;
 import com.alguojian.rxjavademo.entity.BookCommentResponse;
 import com.alguojian.rxjavademo.entity.BookInfo;
@@ -13,17 +15,14 @@ import com.alguojian.rxjavademo.entity.BookInfoResponse;
 import com.alguojian.rxjavademo.entity.LoginRequest;
 import com.alguojian.rxjavademo.entity.LoginResponse;
 import com.alguojian.rxjavademo.entity.RegisterRequest;
-import com.alguojian.rxjavademo.entity.RegisterResponse;
 
 import io.reactivex.Observable;
-import io.reactivex.ObservableSource;
 import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.BiFunction;
 import io.reactivex.functions.Consumer;
-import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 
 /**
@@ -32,16 +31,16 @@ import io.reactivex.schedulers.Schedulers;
 public class MainActivity extends AppCompatActivity {
 
     private CompositeDisposable compositeDisposable;
-    private RetrefitApi retrefitApi;
+    private RetrofitApi retrofitApi;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        this.retrefitApi = OkHttpUtils.cerat().create(RetrefitApi.class);
+        this.retrofitApi = OkHttpUtils.cerat().create(RetrofitApi.class);
 
-        retrefitApi.login(new LoginRequest())
+        retrofitApi.login(new LoginRequest())
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Observer<LoginResponse>() {
@@ -78,10 +77,10 @@ public class MainActivity extends AppCompatActivity {
     private void getBookInfo() {
 
         Observable<BookInfoResponse> observable1
-                = retrefitApi.getBookInfo(new BookInfoRequest())
+                = retrofitApi.getBookInfo(new BookInfoRequest())
                 .subscribeOn(Schedulers.io());
 
-        Observable<BookCommentResponse> observable2 = retrefitApi.getBookComment(new BookCommentRequest())
+        Observable<BookCommentResponse> observable2 = retrofitApi.getBookComment(new BookCommentRequest())
                 .subscribeOn(Schedulers.io());
 
         Observable.zip(observable1, observable2, new BiFunction<BookInfoResponse, BookCommentResponse, BookInfo>() {
@@ -105,34 +104,19 @@ public class MainActivity extends AppCompatActivity {
      * 注册登录,使用flatMap或者concatMap操作线程，转换observable为另一个observable
      */
     private void registerAndLogin() {
-        retrefitApi.register(new RegisterRequest())
+        retrofitApi.register(new RegisterRequest())
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .doOnNext(new Consumer<RegisterResponse>() {
-                    @Override
-                    public void accept(RegisterResponse registerResponse) throws Exception {
+                .doOnNext(registerResponse -> {
 
-                    }
                 }).observeOn(Schedulers.io())
-                .concatMap(new Function<RegisterResponse, ObservableSource<LoginResponse>>() {
-                    @Override
-                    public ObservableSource<LoginResponse> apply(RegisterResponse registerResponse) throws Exception {
-                        return retrefitApi.login(new LoginRequest());
-                    }
-                })
+                .concatMap(registerResponse -> retrofitApi.login(new LoginRequest()))
                 .observeOn(AndroidSchedulers.mainThread())  //回到主线程去处理请求登录的结果
-                .subscribe(new Consumer<LoginResponse>() {
-                    @Override
-                    public void accept(LoginResponse loginResponse) throws Exception {
-                        Toast.makeText(MainActivity.this, "登录成功", Toast.LENGTH_SHORT).show();
-                    }
-                }, new Consumer<Throwable>() {
-                    @Override
-                    public void accept(Throwable throwable) throws Exception {
-
-                        Toast.makeText(MainActivity.this, "登录成功", Toast.LENGTH_SHORT).show();
-                    }
-                });
+                .subscribe(
+                        loginResponse ->
+                                Toast.makeText(MainActivity.this, "登录成功", Toast.LENGTH_SHORT).show(),
+                        throwable ->
+                                Toast.makeText(MainActivity.this, "登录成功", Toast.LENGTH_SHORT).show());
     }
 
     @Override
