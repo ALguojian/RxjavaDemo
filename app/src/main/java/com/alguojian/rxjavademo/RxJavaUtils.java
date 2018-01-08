@@ -150,7 +150,7 @@ public class RxJavaUtils {
 
 
     /**
-     * zip
+     * zip，可以用于接口合并
      * 操作符使用例子
      * zip 专用于合并事件，该合并不是连接（连接操作符后面会说），
      * 而是两两配对，也就意味着，最终配对出的 Observable 发射事件数目只和少的那个相同。
@@ -187,7 +187,7 @@ public class RxJavaUtils {
                     e.onNext("C");
                 }
             }
-        });
+        }).subscribeOn(Schedulers.io());
     }
 
     private static Observable<Integer> getIntegerObservable() {
@@ -212,7 +212,7 @@ public class RxJavaUtils {
                     aaa.append("--" + 5);
                 }
             }
-        });
+        }).subscribeOn(Schedulers.io());
     }
 
 
@@ -259,6 +259,7 @@ public class RxJavaUtils {
                     strings.add("这是第几个" + i);
                 }
                 int time = (int) (1 + Math.random() * 10);
+                //添加延迟效果
                 return Observable.fromIterable(strings).delay(time, TimeUnit.MILLISECONDS);
             }
         }).subscribeOn(Schedulers.newThread())
@@ -329,7 +330,16 @@ public class RxJavaUtils {
 
 
     /**
-     * 添加过滤器
+     * 添加过滤器,sample是添加给个两秒去一个事件放到水缸中，也是过滤的一种方式
+     *
+     * 两种方法归根到底其实就是减少放进水缸的事件的数量, 是以数量取胜, 但是这个方法有个缺点, 就是丢失了大部分的事件.
+     *
+     * 关于OOM
+     * 一是从数量上进行治理, 减少发送进水缸里的事件
+     *二是从速度上进行治理, 减缓事件发送进水缸的速度
+     *
+     *  1.使用 sample 操作符的确定文中已经提到，会丢失部分事件；
+     *  2.使用 sleep 延时的操作也并不完美，下游处理过慢（超过 sleep 时间）时依然后丢失事件。
      */
     public static void useFilter() {
 
@@ -339,7 +349,9 @@ public class RxJavaUtils {
                     public boolean test(Integer integer) throws Exception {
                         return integer % 2 == 1;
                     }
-                }).subscribe(new Consumer<Integer>() {
+                })
+                .sample(2,TimeUnit.SECONDS)
+                .subscribe(new Consumer<Integer>() {
             @Override
             public void accept(Integer integer) throws Exception {
                 KLog.d(TTAG, "接收消息是" + integer);
