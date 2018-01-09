@@ -20,10 +20,10 @@ import retrofit2.converter.protobuf.ProtoConverterFactory;
 
 public class OkHttpUtils {
 
-    private static final String ENDPOINT = "https://api.douban.com/";
+    private static final String ENDPOINT = "http://fy.iciba.com/";
 
     //得到retrofir对象
-    public static Retrofit cerat() {
+    public static Retrofit newInstance() {
 
         OkHttpClient.Builder mBuilder = new OkHttpClient().newBuilder();
         mBuilder.readTimeout(10, TimeUnit.SECONDS);

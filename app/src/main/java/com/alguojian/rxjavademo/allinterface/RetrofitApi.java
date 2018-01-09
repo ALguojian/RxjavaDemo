@@ -8,12 +8,16 @@ import com.alguojian.rxjavademo.entity.LoginRequest;
 import com.alguojian.rxjavademo.entity.LoginResponse;
 import com.alguojian.rxjavademo.entity.RegisterRequest;
 import com.alguojian.rxjavademo.entity.RegisterResponse;
+import com.alguojian.rxjavademo.entity.Translation;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import io.reactivex.Observable;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
+import retrofit2.Call;
+import retrofit2.Callback;
 import retrofit2.http.Body;
 import retrofit2.http.Field;
 import retrofit2.http.FieldMap;
@@ -24,6 +28,7 @@ import retrofit2.http.Header;
 import retrofit2.http.Headers;
 import retrofit2.http.Multipart;
 import retrofit2.http.POST;
+import retrofit2.http.PUT;
 import retrofit2.http.Part;
 import retrofit2.http.PartMap;
 import retrofit2.http.Path;
@@ -85,10 +90,21 @@ import retrofit2.http.Url;
  * <p>
  * <p>
  * @Url 当有URL注解时，@GET传入的URL就可以省略,当GET、POST...HTTP等方法中没有设置Url时，则必须使用 {@link Url}提供
- *
- *
  */
 public interface RetrofitApi {
+
+
+    //RX模式的方法定义之一
+    @PUT("/task/{Id}")
+    Observable<LoginResponse> update(@Path("Id") String Id, @Body HashMap<String, Object> body);
+
+    //RX模式的方法定义之二
+    @PUT("/task/{Id}")
+    Call<LoginResponse> _update(@Path("Id") String Id, @Body HashMap<String, Object> body);
+
+    //常规异步式的方法定义
+    @PUT("/task/{Id}")
+    void update_(@Path("Id") String Id, @Body HashMap<String, Object> body, Callback<LoginRequest> callback);
 
     /**
      * method：网络请求的方法（区分大小写）
@@ -158,14 +174,14 @@ public interface RetrofitApi {
     Observable<LoginResponse> testPartMap(@PartMap Map<String, RequestBody> map, @Part MultipartBody.Part file);
 
     /**
-     * 添加固定参数的请求头
+     * 添加固定参数的请求头，多个请求头用花括号包起来，逗号隔开，键值对已分号隔开
      *
      * @param request
      * @param name
      * @return
      */
     @POST("/post")
-    @Headers("plat: 1")
+    @Headers({"plat: 1", "version: 1", "User-Agent: tbl"})
     @FormUrlEncoded
     Observable<LoginResponse> testForm(@Body LoginRequest request, @Field("userName") String name);
 
@@ -181,5 +197,8 @@ public interface RetrofitApi {
 
     @POST
     Observable<BookCommentResponse> getBookComment(@Body BookCommentRequest request);
+
+    @GET("ajax.php?a=fy&f=auto&t=auto&w=hi%20world")
+    Observable<Translation> getCall();
 
 }

@@ -1,5 +1,7 @@
 package com.alguojian.rxjavademo.rxjava;
 
+import android.util.Log;
+
 import com.alguojian.rxjavademo.TimeUtils;
 import com.socks.library.KLog;
 
@@ -21,6 +23,7 @@ import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 
+import static android.content.ContentValues.TAG;
 import static com.alguojian.rxjavademo.base.MyApplication.TTAG;
 
 /**
@@ -340,6 +343,7 @@ public class RxJavaUtils {
 
 
     /**
+     * 快速创建一个被观察者对象
      * 设置interval 操作符用于间隔时间执行某个操作，其接受三个参数，分别是第一次发送延迟，间隔时间，时间单位。
      */
     public static void useInterval() {
@@ -354,6 +358,87 @@ public class RxJavaUtils {
     }
     //subscribe.dispose();
     //记得activity销毁时取消发送
+
+
+    /**
+     * 每隔指定时间 就发送 事件，可指定发送的数据的数量
+     * 发送的事件序列 = 从0开始、无限递增1的的整数序列
+     * 作用类似于interval（），但可指定发送的数据的数量
+     */
+    public static void useIntervalRange(){
+
+        // 参数说明：
+        // 参数1 = 事件序列起始点；
+        // 参数2 = 事件数量；
+        // 参数3 = 第1次事件延迟发送时间；
+        // 参数4 = 间隔时间数字；
+        // 参数5 = 时间单位
+        Observable.intervalRange(3,10,2, 1, TimeUnit.SECONDS)
+                // 该例子发送的事件序列特点：
+                // 1. 从3开始，一共发送10个事件；
+                // 2. 第1次延迟2s发送，之后每隔2秒产生1个数字（从0开始递增1，无限个）
+                .subscribe(new Observer<Long>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+                        Log.d(TAG, "开始采用subscribe连接");
+                    }
+                    // 默认最先调用复写的 onSubscribe（）
+
+                    @Override
+                    public void onNext(Long value) {
+                        Log.d(TAG, "接收到了事件"+ value  );
+                    }
+                    @Override
+                    public void onError(Throwable e) {
+                        Log.d(TAG, "对Error事件作出响应");
+                    }
+                    @Override
+                    public void onComplete() {
+                        Log.d(TAG, "对Complete事件作出响应");
+                    }
+                });
+    }
+
+    /**
+     * 连续发送 1个事件序列，可指定范围
+     * 发送的事件序列 = 从0开始、无限递增1的的整数序列
+     * 作用类似于intervalRange（），但区别在于：无延迟发送事件
+     */
+    public static void useRange(){
+
+// 参数说明：
+        // 参数1 = 事件序列起始点；
+        // 参数2 = 事件数量；
+        // 注：若设置为负数，则会抛出异常
+        Observable.range(3,10)
+                // 该例子发送的事件序列特点：从3开始发送，每次发送事件递增1，一共发送10个事件
+                .subscribe(new Observer<Integer>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+                        Log.d(TAG, "开始采用subscribe连接");
+                    }
+                    // 默认最先调用复写的 onSubscribe（）
+
+                    @Override
+                    public void onNext(Integer value) {
+                        Log.d(TAG, "接收到了事件"+ value  );
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        Log.d(TAG, "对Error事件作出响应");
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        Log.d(TAG, "对Complete事件作出响应");
+                    }
+
+                });
+
+
+
+    }
 
 
     /**

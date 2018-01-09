@@ -32,7 +32,7 @@ public class Main2Activity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main2);
 
-        this.retrofitApi = OkHttpUtils.cerat().create(RetrofitApi.class);
+        this.retrofitApi = OkHttpUtils.newInstance().create(RetrofitApi.class);
 
         //表单形式上传文件
         RequestBody name = RequestBody.create(MediaType.parse("name"), "xiaoming");

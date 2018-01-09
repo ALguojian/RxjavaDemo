@@ -38,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        this.retrofitApi = OkHttpUtils.cerat().create(RetrofitApi.class);
+        this.retrofitApi = OkHttpUtils.newInstance().create(RetrofitApi.class);
 
         retrofitApi.login(new LoginRequest())
                 .subscribeOn(Schedulers.io())
