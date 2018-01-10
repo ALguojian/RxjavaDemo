@@ -10,6 +10,7 @@ import com.alguojian.rxjavademo.entity.Translation;
 import com.socks.library.KLog;
 
 import java.util.ArrayList;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Observable;
@@ -38,10 +39,150 @@ public class Main3Activity extends AppCompatActivity {
 
 //        flatMap();
 
-        concatMap();
+//        concatMap();
 
 //        buffer();
 
+//        concat();
+
+//        merge();
+
+//        concatArrayDelayErrorTest();
+
+//        combineLatest();
+
+//        collect();
+
+//        startWith();
+
+        count();
+    }
+
+    /**
+     * 统计被观察者发送事件的数量
+     */
+    private void count() {
+
+        Observable.just(1,2,3,4)
+                .count()
+                .subscribe(aLong -> {
+                    KLog.d(TTAG, "发送事件数量是："+aLong);
+
+                });
+    }
+
+    /**
+     *  在一个被观察者发送事件前，追加发送一些数据
+     *  后追加，先调用，组合模式
+     */
+    private void startWith() {
+
+        Observable.just(2,3,4,5)
+                .startWith(0)
+                .startWith(Observable.just(7,8))
+                .startWithArray(1)
+                .subscribe(integer -> {
+
+                });
+    }
+
+    /**
+     * 将被观察者Observable发送的数据事件收集到一个数据结构里
+     */
+    private void collect() {
+
+        Observable.just(1,2,3,4,5,6,7,8)
+                .collect((Callable<ArrayList<Integer>>) () ->
+                        new ArrayList<>(),
+                        (integers, integer) -> {
+                    integers.add(integer);
+                }).subscribe(integers ->
+                KLog.d(TTAG, integers.toString()));
+
+    }
+
+    /**
+     * 当两个Observables中的任何一个发送了数据后，
+     * 将先发送了数据的Observables 的最新（最后）一个数据 与
+     * 另外一个Observable发送的每个数据结合，最终基于该函数的结果发送数据
+     */
+    private void combineLatest() {
+
+        Observable.combineLatest(
+                Observable.just(1L, 2L, 3L, 4L, 5L),
+                Observable.intervalRange(0, 3, 1, 1, TimeUnit.SECONDS),
+                (aLong, aLong2) -> {
+                    KLog.d(TTAG, aLong);
+                    KLog.d(TTAG, aLong2);
+                    return aLong+aLong2;
+                }
+        ).subscribe(aLong -> {
+            KLog.d(TTAG, aLong);
+        });
+
+    }
+
+
+    /**
+     * 使用conat以及merge操作符时，如果某个发射者发出error()时间，则会总结整个流程，
+     * 我们希望onError（）事件推迟到其他发射者都发送完时间之后后才会触发，
+     * 即可使用` concatDelayError()`以及`mergeDelayError()`
+     */
+    private void concatArrayDelayErrorTest() {
+
+        Observable.concatArrayDelayError(Observable.create(emitter -> {
+
+            emitter.onNext(1);
+            emitter.onNext(2);
+            emitter.onNext(3);
+            // 发送Error事件，因为使用了concatDelayError，所以第2个Observable将会发送事件，等发送完毕后，再发送错误事件
+            emitter.onError(new NullPointerException());
+            emitter.onComplete();
+
+        }),Observable.just(4,5,6))
+                .subscribe(integer -> {
+                });
+    }
+
+    /**
+     * 合并发射者，按时间线执行
+     */
+    private void merge() {
+
+        Observable.merge(
+                //延迟发送操作符
+                //从0开始发送，工发送3个数据，第一次发件延迟时间1秒。间隔时间1s
+                //
+                Observable.intervalRange(0,3,1,1,TimeUnit.SECONDS),
+                Observable.intervalRange(2,3,1,1,TimeUnit.SECONDS)
+        ).subscribe(aLong -> {
+
+        });
+
+    }
+
+    /**
+     * 该类型的操作符的作用 = 组合多个被观察者
+     * 组合多个被观察者一起发送数据，合并后 按发送顺序串行执行
+     *concat()
+     * concatArray()
+     */
+    private void concat() {
+
+        Observable.concat(Observable.just(1,2)//发射者数量不超过4个
+        ,Observable.just(3,4)
+        ,Observable.just(7,8))
+                .subscribe(integer -> {
+                });
+
+
+        Observable.concatArray(Observable.just(1,2)//被观察者数量不受限制
+        ,Observable.just(4,5)
+        ,Observable.just(7,8)
+        ,Observable.just(3,6))
+                .subscribe(integer -> {
+
+                });
     }
 
     /**

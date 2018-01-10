@@ -21,8 +21,6 @@ import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
-import io.reactivex.functions.BiFunction;
-import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
 
 /**
@@ -83,18 +81,10 @@ public class MainActivity extends AppCompatActivity {
         Observable<BookCommentResponse> observable2 = retrofitApi.getBookComment(new BookCommentRequest())
                 .subscribeOn(Schedulers.io());
 
-        Observable.zip(observable1, observable2, new BiFunction<BookInfoResponse, BookCommentResponse, BookInfo>() {
-            @Override
-            public BookInfo apply(BookInfoResponse bookInfoResponse, BookCommentResponse bookCommentResponse) throws Exception {
-                return new BookInfo(bookInfoResponse, bookCommentResponse);
-            }
-        }).observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Consumer<BookInfo>() {
-                    @Override
-                    public void accept(BookInfo bookInfo) throws Exception {
+        Observable.zip(observable1, observable2, (bookInfoResponse, bookCommentResponse) -> new BookInfo(bookInfoResponse, bookCommentResponse)).observeOn(AndroidSchedulers.mainThread())
+                .subscribe(bookInfo -> {
 
-                        //请求成功，合并接口响应内容
-                    }
+                    //请求成功，合并接口响应内容
                 });
 
 
