@@ -11,9 +11,7 @@ import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Flowable;
 import io.reactivex.Observable;
-import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
-import io.reactivex.ObservableSource;
 import io.reactivex.Observer;
 import io.reactivex.Single;
 import io.reactivex.SingleObserver;
@@ -239,34 +237,22 @@ public class RxJavaUtils {
      */
     public static void useConcatMap() {
 
-        Observable.create(new ObservableOnSubscribe<Integer>() {
-            @Override
-            public void subscribe(ObservableEmitter<Integer> emitter) throws Exception {
-                emitter.onNext(1);
-                emitter.onNext(2);
-                emitter.onNext(3);
-            }
-        }).concatMap(new Function<Integer, ObservableSource<String>>() {
-            @Override
-            public ObservableSource<String> apply(Integer integer) throws Exception {
+        Observable.create((ObservableOnSubscribe<Integer>) emitter -> {
+            emitter.onNext(1);
+            emitter.onNext(2);
+            emitter.onNext(3);
+        }).concatMap(integer -> {
 
-                ArrayList<String> strings = new ArrayList<>();
+            ArrayList<String> strings = new ArrayList<>();
 
-                for (int i = 0; i < 3; i++) {
-                    strings.add("这是第几个" + i);
-                }
-                int time = (int) (1 + Math.random() * 10);
-                return Observable.fromIterable(strings).delay(time, TimeUnit.MILLISECONDS);
+            for (int i = 0; i < 3; i++) {
+                strings.add("这是第几个" + i);
             }
+            int time = (int) (1 + Math.random() * 10);
+            return Observable.fromIterable(strings).delay(time, TimeUnit.MILLISECONDS);
         }).subscribeOn(Schedulers.newThread())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Consumer<String>() {
-                    @Override
-                    public void accept(String s) throws Exception {
-
-                        KLog.d(TTAG, s);
-                    }
-                });
+                .subscribe(s -> KLog.d(TTAG, s));
 
     }
 
@@ -279,13 +265,8 @@ public class RxJavaUtils {
 
         Observable.just(1, 1, 1, 2, 2, 2, 12, 2, 3, 3)
                 .distinct()
-                .subscribe(new Consumer<Integer>() {
-                    @Override
-                    public void accept(Integer integer) throws Exception {
-
-                        KLog.d(TTAG, "第几条" + integer);
-                    }
-                });
+                .subscribe(integer ->
+                        KLog.d(TTAG, "第几条" + integer));
     }
 
 

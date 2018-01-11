@@ -13,11 +13,15 @@ import java.util.ArrayList;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
+import io.reactivex.Notification;
 import io.reactivex.Observable;
+import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Action;
+import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
 
 import static com.alguojian.rxjavademo.base.MyApplication.TTAG;
@@ -55,7 +59,114 @@ public class Main3Activity extends AppCompatActivity {
 
 //        startWith();
 
-        count();
+//        count();
+
+//        zip();
+
+        useDo();
+    }
+
+
+    /**
+     * do操作符
+     */
+    private void useDo() {
+
+        Observable.create(new ObservableOnSubscribe<Integer>() {
+            @Override
+            public void subscribe(ObservableEmitter<Integer> emitter) throws Exception {
+                emitter.onNext(1);
+                emitter.onNext(2);
+                emitter.onNext(3);
+                emitter.onError(new Throwable("发送错误"));
+            }
+            //1. 当Observable每发送1次数据事件就会调用1次
+        }).doOnEach(new Consumer<Notification<Integer>>() {
+            @Override
+            public void accept(Notification<Integer> integerNotification) throws Exception {
+
+                KLog.d(TTAG, "doOnEach:" + integerNotification);
+            }
+            // 2. 执行Next事件前调用
+        }).doOnNext(new Consumer<Integer>() {
+            @Override
+            public void accept(Integer integer) throws Exception {
+                KLog.d(TTAG, "doOnNext:" + integer);
+            }
+            //3.执行Next事件后调用
+        }).doAfterNext(new Consumer<Integer>() {
+            @Override
+            public void accept(Integer integer) throws Exception {
+
+            }
+        }).doOnComplete(new Action() {
+            @Override
+            public void run() throws Exception {
+                KLog.d(TTAG, "doOnCompleted:");
+            }
+        }).doOnError(new Consumer<Throwable>() {
+            @Override
+            public void accept(Throwable throwable) throws Exception {
+
+                KLog.d(TTAG, "doOnError:" + throwable.getMessage());
+            }
+        }).doOnSubscribe(new Consumer<Disposable>() {
+            @Override
+            public void accept(Disposable disposable) throws Exception {
+                KLog.d(TTAG, "doOnSubscribe:");
+            }
+        }).doAfterTerminate(new Action() {
+            @Override
+            public void run() throws Exception {
+                KLog.d(TTAG, "doAfterTerminate");
+            }
+        }).doFinally(new Action() {
+            @Override
+            public void run() throws Exception {
+                KLog.d(TTAG, "doFinally");
+            }
+        }).subscribe(new Observer<Integer>() {
+            @Override
+            public void onSubscribe(Disposable d) {
+                KLog.d(TTAG, "开始发射了");
+            }
+
+            @Override
+            public void onNext(Integer integer) {
+                KLog.d(TTAG, "接收到事件：" + integer);
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                KLog.d(TTAG, "发生错误了：" + e.getMessage());
+            }
+
+            @Override
+            public void onComplete() {
+                KLog.d(TTAG, "处理完成了");
+            }
+        });
+
+    }
+
+
+    /**
+     * 合并数据源
+     */
+    private void zip() {
+
+        Observable.zip(
+                retrofitApi.getCall().subscribeOn(Schedulers.io()),
+                retrofitApi.getCall().subscribeOn(Schedulers.io()),
+                (translation, translation2) ->
+                        translation.toString() + translation2.toString())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(s -> {
+
+                    KLog.d(TTAG, "合并的数据源是：" + s.toString());
+                }, throwable -> {
+
+                });
     }
 
     /**
@@ -63,23 +174,23 @@ public class Main3Activity extends AppCompatActivity {
      */
     private void count() {
 
-        Observable.just(1,2,3,4)
+        Observable.just(1, 2, 3, 4)
                 .count()
                 .subscribe(aLong -> {
-                    KLog.d(TTAG, "发送事件数量是："+aLong);
-
+                    KLog.d(TTAG, "发送事件数量是：" + aLong);
                 });
     }
 
+
     /**
-     *  在一个被观察者发送事件前，追加发送一些数据
-     *  后追加，先调用，组合模式
+     * 在一个被观察者发送事件前，追加发送一些数据
+     * 后追加，先调用，组合模式
      */
     private void startWith() {
 
-        Observable.just(2,3,4,5)
+        Observable.just(2, 3, 4, 5)
                 .startWith(0)
-                .startWith(Observable.just(7,8))
+                .startWith(Observable.just(7, 8))
                 .startWithArray(1)
                 .subscribe(integer -> {
 
@@ -91,12 +202,12 @@ public class Main3Activity extends AppCompatActivity {
      */
     private void collect() {
 
-        Observable.just(1,2,3,4,5,6,7,8)
+        Observable.just(1, 2, 3, 4, 5, 6, 7, 8)
                 .collect((Callable<ArrayList<Integer>>) () ->
-                        new ArrayList<>(),
+                                new ArrayList<>(),
                         (integers, integer) -> {
-                    integers.add(integer);
-                }).subscribe(integers ->
+                            integers.add(integer);
+                        }).subscribe(integers ->
                 KLog.d(TTAG, integers.toString()));
 
     }
@@ -114,7 +225,7 @@ public class Main3Activity extends AppCompatActivity {
                 (aLong, aLong2) -> {
                     KLog.d(TTAG, aLong);
                     KLog.d(TTAG, aLong2);
-                    return aLong+aLong2;
+                    return aLong + aLong2;
                 }
         ).subscribe(aLong -> {
             KLog.d(TTAG, aLong);
@@ -139,7 +250,7 @@ public class Main3Activity extends AppCompatActivity {
             emitter.onError(new NullPointerException());
             emitter.onComplete();
 
-        }),Observable.just(4,5,6))
+        }), Observable.just(4, 5, 6))
                 .subscribe(integer -> {
                 });
     }
@@ -147,41 +258,107 @@ public class Main3Activity extends AppCompatActivity {
     /**
      * 合并发射者，按时间线执行
      */
+
+    String resultss = "数据源来自：";
+
     private void merge() {
 
+//        Observable.merge(
+//                //延迟发送操作符
+//                //从0开始发送，发送3个数据，第一次发件延迟时间1秒。间隔时间1s
+//                //
+//                Observable.intervalRange(0,3,1,1,TimeUnit.SECONDS),
+//                Observable.intervalRange(2,3,1,1,TimeUnit.SECONDS)
+//        ).subscribe(aLong -> {
+//
+//        });
+
         Observable.merge(
-                //延迟发送操作符
-                //从0开始发送，工发送3个数据，第一次发件延迟时间1秒。间隔时间1s
-                //
-                Observable.intervalRange(0,3,1,1,TimeUnit.SECONDS),
-                Observable.intervalRange(2,3,1,1,TimeUnit.SECONDS)
-        ).subscribe(aLong -> {
+                Observable.just("网络"),
+                Observable.just("本地文件")
+        ).subscribe(new Observer<String>() {
+            @Override
+            public void onSubscribe(Disposable d) {
+            }
 
+            @Override
+            public void onNext(String s) {
+                resultss += s;
+            }
+
+            @Override
+            public void onError(Throwable e) {
+            }
+
+            @Override
+            public void onComplete() {
+
+                KLog.d(TTAG, "接收完成统一处理事件：" + resultss);
+            }
         });
-
     }
 
     /**
      * 该类型的操作符的作用 = 组合多个被观察者
      * 组合多个被观察者一起发送数据，合并后 按发送顺序串行执行
-     *concat()
+     * concat()
      * concatArray()
+     * <p>
+     * 实例：从内存以及磁盘和网络获取缓存
      */
+
+    String memoryCache = null;
+    String diskCache = "磁盘缓存数据";
+
     private void concat() {
 
-        Observable.concat(Observable.just(1,2)//发射者数量不超过4个
-        ,Observable.just(3,4)
-        ,Observable.just(7,8))
+        Observable.concat(Observable.just(1, 2)//发射者数量不超过4个
+                , Observable.just(3, 4)
+                , Observable.just(7, 8))
                 .subscribe(integer -> {
                 });
 
-
-        Observable.concatArray(Observable.just(1,2)//被观察者数量不受限制
-        ,Observable.just(4,5)
-        ,Observable.just(7,8)
-        ,Observable.just(3,6))
+        Observable.concatArray(Observable.just(1, 2)//被观察者数量不受限制
+                , Observable.just(4, 5)
+                , Observable.just(7, 8)
+                , Observable.just(3, 6))
                 .subscribe(integer -> {
 
+                });
+
+        Observable.concat(
+                Observable.create(emitter -> {
+
+                    //判断内存是否含有缓存
+                    if (null == memoryCache) {
+                        emitter.onComplete();
+                    } else {
+                        emitter.onNext(memoryCache);
+                    }
+                }),
+                Observable.create(emitter -> {
+
+                    //判断磁盘
+                    if (null == diskCache) {
+                        emitter.onComplete();
+                    } else {
+                        emitter.onNext(diskCache);
+                    }
+                }),
+                Observable.create((ObservableOnSubscribe<String>) emitter -> {
+
+                    emitter.onNext("从网络获取缓存数据");
+                })
+                //通过firstElement()，从串联队列中取出并发送第1个有效事件（Next事件），即依次判断检查memory、disk、network
+        ).firstElement()
+                // 即本例的逻辑为：
+                // a. firstElement()取出第1个事件 = memory，即先判断内存缓存中有无数据缓存；由于memoryCache = null，即内存缓存中无数据，所以发送结束事件（视为无效事件）
+                // b. firstElement()继续取出第2个事件 = disk，即判断磁盘缓存中有无数据缓存：由于diskCache ≠ null，即磁盘缓存中有数据，所以发送Next事件（有效事件）
+                // c. 即firstElement()已发出第1个有效事件（disk事件），所以停止判断。
+
+                .subscribe(s -> {
+
+                    KLog.d(TTAG, "缓存获得路径是：" + s.toString());
                 });
     }
 

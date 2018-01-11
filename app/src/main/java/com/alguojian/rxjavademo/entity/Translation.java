@@ -28,5 +28,11 @@ public class Translation {
         KLog.d(TTAG, content.out);
     }
 
-    
+    @Override
+    public String toString() {
+        return "Translation{" +
+                "status=" + status +
+                ", content=" + content +
+                '}';
+    }
 }
