@@ -17,11 +17,16 @@ import io.reactivex.Notification;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
+import io.reactivex.ObservableSource;
 import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Action;
+import io.reactivex.functions.BiPredicate;
+import io.reactivex.functions.BooleanSupplier;
 import io.reactivex.functions.Consumer;
+import io.reactivex.functions.Function;
+import io.reactivex.functions.Predicate;
 import io.reactivex.schedulers.Schedulers;
 
 import static com.alguojian.rxjavademo.base.MyApplication.TTAG;
@@ -63,7 +68,468 @@ public class Main3Activity extends AppCompatActivity {
 
 //        zip();
 
-        useDo();
+//        useDo();
+
+//        onErrorReturn();
+
+//        onErrorResumeNext();
+
+//        onExceptionResumeNext();
+
+//        retry();
+
+//        retryUntil();
+
+//        retryWhen();
+
+//        repeat();
+
+        repeatWhen();
+    }
+
+
+    /**
+     * 有条件地、重复发送 被观察者事件
+     * 将原始 Observable 停止发送事件的标识（Complete（） /  Error（））
+     * 转换成1个 Object 类型数据传递给1个新被观察者（Observable），以此决定是否重新订阅 & 发送原来的 Observable
+     * <p>
+     * 返回结果分为两种情况：
+     * 1.若新被观察者（Observable）返回1个Complete / Error事件，则不重新订阅 & 发送原来的 Observable
+     * 2.若新被观察者（Observable）返回其余事件时，则重新订阅 & 发送原来的 Observable
+     */
+    private void repeatWhen() {
+
+        Observable.just(1,2,3)
+                .repeatWhen(new Function<Observable<Object>, ObservableSource<?>>() {
+                    @Override
+                    public ObservableSource<?> apply(Observable<Object> objectObservable) throws Exception {
+
+                        // 在Function函数中，必须对输入的 Observable<Object>进行处理，这里使用的是flatMap操作符接收上游的数据
+
+                        return objectObservable.flatMap(new Function<Object, ObservableSource<?>>() {
+                            @Override
+                            public ObservableSource<?> apply(Object o) throws Exception {
+
+                                //情况1：若新被观察者（Observable）返回1个Complete（） /  Error（）事件，则不重新订阅 & 发送原来的 Observable
+
+                                // Observable.empty() = 发送Complete事件，但不会回调观察者的onComplete（）
+
+                                // return Observable.error(new Throwable("不再重新订阅事件"));
+                                // 返回Error事件 = 回调onError（）事件，并接收传过去的错误信息。
+
+                                // 情况2：若新被观察者（Observable）返回其余事件，则重新订阅 & 发送原来的 Observable
+                                 return Observable.just(1);
+                                // 仅仅是作为1个触发重新订阅被观察者的通知，发送的是什么数据并不重要，只要不是Complete（） /  Error（）事件
+                            }
+                        });
+                    }
+                }).subscribe(new Observer<Integer>() {
+            @Override
+            public void onSubscribe(Disposable d) {
+                KLog.d(TTAG, "开始连接");
+            }
+            @Override
+            public void onNext(Integer integer) {
+                KLog.d(TTAG, "收到事件：" + integer);
+            }
+            @Override
+            public void onError(Throwable e) {
+                KLog.d(TTAG, "收到错误是："+e.getMessage());
+            }
+            @Override
+            public void onComplete() {
+                KLog.d(TTAG, "完成");
+            }
+        });
+
+    }
+
+
+    /**
+     * 无条件地、重复发送 被观察者事件
+     */
+    private void repeat() {
+
+        Observable.just(1, 2, 3, 4)
+                //设置重复发送次数3次
+                .repeat(3)
+                .subscribe(new Observer<Integer>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+                        KLog.d(TTAG, "开始了链接");
+                    }
+
+                    @Override
+                    public void onNext(Integer integer) {
+                        KLog.d(TTAG, "接收事件是：" + integer);
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        KLog.d(TTAG, "收到错误了");
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        KLog.d(TTAG, "完成");
+                    }
+                });
+
+    }
+
+
+    /**
+     * 遇到错误时，将发生的错误传递给一个新的被观察者（Observable），
+     * 并决定是否需要重新订阅原始被观察者（Observable）& 发送事件
+     */
+    private void retryWhen() {
+
+        Observable.create(new ObservableOnSubscribe<Integer>() {
+            @Override
+            public void subscribe(ObservableEmitter<Integer> emitter) throws Exception {
+                emitter.onNext(1);
+                emitter.onNext(2);
+                emitter.onError(new Exception("发送错误"));
+                emitter.onNext(6);
+                emitter.onNext(7);
+            }
+        }).retryWhen(new Function<Observable<Throwable>, ObservableSource<?>>() {
+            @Override
+            public ObservableSource<?> apply(Observable<Throwable> throwableObservable) throws Exception {
+
+                // 参数Observable<Throwable>中的泛型 = 上游操作符抛出的异常，可通过该条件来判断异常的类型
+                // 返回Observable<?> = 新的被观察者 Observable（任意类型）
+                return throwableObservable.flatMap(new Function<Throwable, ObservableSource<?>>() {
+                    @Override
+                    public ObservableSource<?> apply(Throwable throwable) throws Exception {
+
+                        // 1. 若返回的Observable发送的事件 = Error事件，则原始的Observable不重新发送事件
+                        // 该异常错误信息可在观察者中的onError（）中获得
+//                        return Observable.error(new Throwable("终止了"));
+
+                        // 2. 若返回的Observable发送的事件 = Next事件，则原始的Observable重新发送事件（若持续遇到错误，则持续重试）
+                        return Observable.just(1);
+                    }
+                });
+            }
+        }).subscribe(new Observer<Integer>() {
+            @Override
+            public void onSubscribe(Disposable d) {
+
+            }
+
+            @Override
+            public void onNext(Integer integer) {
+
+                KLog.d(TTAG, "收到事件：" + integer);
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                KLog.d(TTAG, "错误信息是：" + e.getMessage());
+            }
+
+            @Override
+            public void onComplete() {
+
+            }
+        });
+
+    }
+
+
+    /**
+     * 出现错误后，判断是否需要重新发送数据
+     * <p>
+     * 若需要重新发送 & 持续遇到错误，则持续重试
+     * 作用类似于retry（Predicate predicate）
+     * 返回false就一直重试
+     * 返回true结束
+     */
+    private void retryUntil() {
+
+        Observable.create(new ObservableOnSubscribe<Integer>() {
+            @Override
+            public void subscribe(ObservableEmitter<Integer> emitter) throws Exception {
+                emitter.onNext(1);
+                emitter.onNext(2);
+                emitter.onNext(3);
+                emitter.onError(new Exception("发生错误了"));
+                emitter.onNext(5);
+                emitter.onNext(8);
+            }
+        }).retryUntil(new BooleanSupplier() {
+            @Override
+            public boolean getAsBoolean() throws Exception {
+
+                //返回false就一直重试
+                //返回true结束
+                return true;
+            }
+        }).subscribe(new Observer<Integer>() {
+            @Override
+            public void onSubscribe(Disposable d) {
+
+            }
+
+            @Override
+            public void onNext(Integer integer) {
+
+                KLog.d(TTAG, "onNext:" + integer);
+            }
+
+            @Override
+            public void onError(Throwable e) {
+
+                KLog.d(TTAG, "错误是：" + e.getMessage());
+
+            }
+
+            @Override
+            public void onComplete() {
+
+            }
+        });
+
+    }
+
+
+    /**
+     * 当出现错误时，让被观察者（Observable）重新发射数据
+     * Throwable 和 Exception都可拦截
+     * <p>
+     * 1. retry（）
+     * 作用：出现错误时，让被观察者重新发送数据
+     * 注：若一直错误，则一直重新发送
+     * <p>
+     * 2. retry（long time）
+     * 作用：出现错误时，让被观察者重新发送数据（具备重试次数限制
+     * 参数 = 重试次数
+     * <p>
+     * 3. retry（Predicate predicate）
+     * 作用：出现错误后，判断是否需要重新发送数据（若需要重新发送& 持续遇到错误，则持续重试）
+     * 参数 = 判断逻辑
+     * <p>
+     * 4. retry（new BiPredicate<Integer, Throwable>）
+     * 作用：出现错误后，判断是否需要重新发送数据（若需要重新发送 & 持续遇到错误，则持续重试
+     * 参数 =  判断逻辑（传入当前重试次数 & 异常错误信息）
+     * <p>
+     * 5. retry（long time,Predicate predicate）
+     * 作用：出现错误后，判断是否需要重新发送数据（具备重试次数限制
+     * 参数 = 设置重试次数 & 判断逻辑
+     */
+    private void retry() {
+
+        Observable.create(new ObservableOnSubscribe<Integer>() {
+            @Override
+            public void subscribe(ObservableEmitter<Integer> emitter) throws Exception {
+                emitter.onNext(1);
+                emitter.onNext(2);
+                emitter.onNext(3);
+                emitter.onError(new Throwable("发送错误了"));
+                emitter.onNext(5);
+                emitter.onNext(6);
+            }
+            //遇到错误时，让被观察者重新发射数据（若一直错误，则一直重新发送
+        }).retry()
+                //遇到错误时，重试3次
+                .retry(3)
+                //拦截错误后，判断是否需要重新发送请求
+                .retry(new Predicate<Throwable>() {
+                    @Override
+                    public boolean test(Throwable throwable) throws Exception {
+                        KLog.d(TTAG, "错误是：" + throwable.getMessage());
+
+                        //返回false = 不重新重新发送数据 & 调用观察者的onError结束
+                        //返回true = 重新发送请求（若持续遇到错误，就持续重新发送）
+                        return throwable.getMessage().equals("我是判定错误");
+                    }
+                    //出现错误后，判断是否需要重新发送数据（若需要重新发送 & 持续遇到错误，则持续重试
+                    // 参数 =  判断逻辑（传入当前重试次数 & 异常错误信息）
+                }).retry(new BiPredicate<Integer, Throwable>() {
+            @Override
+            public boolean test(Integer integer, Throwable throwable) throws Exception {
+                KLog.d(TTAG, "错误是：" + throwable.getMessage());
+                KLog.d(TTAG, "重试次数是：" + integer);
+
+                return true;
+            }
+            // 作用：出现错误后，判断是否需要重新发送数据（具备重试次数限制
+            // 参数 = 设置重试次数 & 判断逻辑
+        }).retry(3, new Predicate<Throwable>() {
+            @Override
+            public boolean test(Throwable throwable) throws Exception {
+                KLog.d(TTAG, "错误是：" + throwable.getMessage());
+
+                //返回false = 不重新重新发送数据 & 调用观察者的onError（）结束
+                //返回true = 重新发送请求（最多重新发送3次）
+                return true;
+            }
+        }).subscribe(new Observer<Integer>() {
+            @Override
+            public void onSubscribe(Disposable d) {
+
+            }
+
+            @Override
+            public void onNext(Integer integer) {
+
+            }
+
+            @Override
+            public void onError(Throwable e) {
+
+            }
+
+            @Override
+            public void onComplete() {
+
+            }
+        });
+
+
+    }
+
+    private void onExceptionResumeNext() {
+
+        Observable.create(new ObservableOnSubscribe<Integer>() {
+            @Override
+            public void subscribe(ObservableEmitter<Integer> emitter) throws Exception {
+                emitter.onNext(1);
+                emitter.onNext(2);
+                emitter.onNext(3);
+                emitter.onNext(4);
+                emitter.onError(new Exception("发生错误了呢"));
+            }
+        }).onExceptionResumeNext(new Observable<Integer>() {
+            @Override
+            protected void subscribeActual(Observer<? super Integer> observer) {
+
+                observer.onNext(11);
+                observer.onNext(22);
+                observer.onComplete();
+            }
+        }).subscribe(new Observer<Integer>() {
+            @Override
+            public void onSubscribe(Disposable d) {
+
+            }
+
+            @Override
+            public void onNext(Integer integer) {
+
+                KLog.d(TTAG, "接收到事件：" + integer);
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                KLog.d(TTAG, "失败了");
+            }
+
+            @Override
+            public void onComplete() {
+                KLog.d(TTAG, "结束了");
+            }
+        });
+
+    }
+
+    /**
+     * 方案2
+     * 发送新的eObservable
+     * 两种方式
+     * onErrorResumeNext( )拦截的错误=Throwable；需要拦截Exception使用下面的方式
+     * <p>
+     * onExceptionResumeNext( )如果拦截的错误=Exception，则会发送新的Observable，不会走onerror（）方法
+     * 如果拦截到Throwable错误，会将错误传递给观察者的onError方法，不在发送新的Observable
+     */
+    private void onErrorResumeNext() {
+
+        Observable.create(new ObservableOnSubscribe<Integer>() {
+            @Override
+            public void subscribe(ObservableEmitter<Integer> emitter) throws Exception {
+                emitter.onNext(1);
+                emitter.onNext(2);
+                emitter.onNext(3);
+                emitter.onNext(4);
+                emitter.onError(new Throwable("发生错误了呢"));
+            }
+        }).onErrorResumeNext(new Function<Throwable, ObservableSource<? extends Integer>>() {
+            @Override
+            public ObservableSource<? extends Integer> apply(Throwable throwable) throws Exception {
+
+                KLog.d(TTAG, "onErrorResumeNext:" + throwable.getMessage());
+
+                return Observable.just(7, 3, 6, 8);
+            }
+        }).subscribe(new Observer<Integer>() {
+            @Override
+            public void onSubscribe(Disposable d) {
+
+            }
+
+            @Override
+            public void onNext(Integer integer) {
+
+                KLog.d(TTAG, "接收到事件：" + integer);
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                KLog.d(TTAG, "失败了");
+            }
+
+            @Override
+            public void onComplete() {
+                KLog.d(TTAG, "结束了");
+            }
+        });
+    }
+
+
+    /**
+     * 关于错误的解决方案
+     */
+    private void onErrorReturn() {
+
+
+        /**
+         * 方案1
+         * 发送一个特殊书剑，正常结束
+         */
+        Observable.create((ObservableOnSubscribe<Integer>) emitter -> {
+            emitter.onComplete();
+            emitter.onNext(1);
+            emitter.onNext(2);
+            emitter.onNext(3);
+            emitter.onNext(4);
+            emitter.onError(new Throwable("发生错误了"));
+        }).onErrorReturn(throwable -> {
+            KLog.d(TTAG, "在onErrorReturn处理了错误::" + throwable.getMessage());
+
+            //发生错误时发送一个事件，正常结束
+            return 666;
+        }).subscribe(new Observer<Integer>() {
+            @Override
+            public void onSubscribe(Disposable d) {
+
+            }
+
+            @Override
+            public void onNext(Integer integer) {
+                KLog.d(TTAG, "接收到事件：" + integer);
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                KLog.d(TTAG, "失败了");
+            }
+
+            @Override
+            public void onComplete() {
+                KLog.d(TTAG, "结束了");
+            }
+        });
     }
 
 
@@ -146,7 +612,6 @@ public class Main3Activity extends AppCompatActivity {
                 KLog.d(TTAG, "处理完成了");
             }
         });
-
     }
 
 
